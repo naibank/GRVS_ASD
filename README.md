@@ -28,4 +28,14 @@ Contains scripts used in the study of Genome-wide rare variant score associates 
   3.4 getNC.R = to obtain noncoding features for SNVs data<br/>
   3.5 getSmallCNVGeneset.R = to transform rare CNVs (<10kb) data in a format suitable for burden analysis<br/>
   3.6 getSNVGeneset.R =  to transform rare SNVs data in a format suitable for burden analysis<br/>
-  3.7 
+  3.7 pTDT.R = to test for over transmission of risk common variants in ADM-SSC and ADM-NFLD data<br/>
+  3.8 TestSSCUnaffGRS.R = to compare GRVS between affected and unaffected individuals<br/>
+  3.9 getScore.R = calculating GRVS in SSC cohort and perform the analysis<br/>
+  3.10 noncoding/burdenRequireFunctions.R = a library script contains function required for analysis<br/>
+  3.11 noncoding/getCNV.R = to get rare CNVs data for noncoding analysis<br/>
+  3.12 noncoding/getCNVMatrix.R = to transform rare CNVs (>10kb) data into matrix format<br/>
+  3.13 noncoding/getDataSNV.R = to get rare SNVs data for noncoding analysis<br/>
+  3.14 noncoding/getSmallCNVMatrix.R = to transform rare CNVs (<=10kb) data into matrix format<br/>
+  3.15 noncoding/getSNVDenovoMatrix.R = to transfrom de novo SNVs data into matrix format<br/>
+  3.16 noncoding/getSNVRareMatrix.R = to transfrom de novo SNVs data into matrix format<br/><br/>
+  
