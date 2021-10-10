@@ -38,4 +38,13 @@ Contains scripts used in the study of Genome-wide rare variant score associates 
   3.14 noncoding/getSmallCNVMatrix.R = to transform rare CNVs (<=10kb) data into matrix format<br/>
   3.15 noncoding/getSNVDenovoMatrix.R = to transfrom de novo SNVs data into matrix format<br/>
   3.16 noncoding/getSNVRareMatrix.R = to transfrom de novo SNVs data into matrix format<br/><br/>
+4. Under PRS folder (to perform analysis of common variants</br>
+  4.1 analysisPRS.R = to analyze PRS data<br/>
+  4.1 fixFam.R = to fix fam file for PRS calculation<br/>
+  4.1 getPower.R = to calculate power of PRS analysis<br/>
+  4.1 PrepareFileIllumina.sh = to prepare files for PRS calculation<br/>
+  4.1 prs_2021.sh = to calculate PRS of NFLD cohort<br/>
+  4.1 Preprocess.gwas.summary.files.R = to preprocess GWAS summary stats<br/>
+  4.1 SSC/Preprocess.gwas.summary.files.R = to preprocess GWAS summary stats for SSC PRS calculation<br/>
+  4.9 SSC/prs.sh = to calculate PRS of SSC cohort
   
