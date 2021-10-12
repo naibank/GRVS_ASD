@@ -1,12 +1,3 @@
-#!/bin/bash -x
-
-#PBS -N ssc.prs
-#PBS -l nodes=1:ppn=1
-#PBS -l vmem=32g
-#PBS -d /hpf/largeprojects/tcagstor/users/worrawat/NFLD/SSCPRS
-#PBS -l walltime=24:00:00
-#PBS -e /hpf/largeprojects/tcagstor/users/worrawat/NFLD/SSCPRS/prs.error
-#PBS -o /hpf/largeprojects/tcagstor/users/worrawat/NFLD/SSCPRS/prs.stdout
 
 ../AdaPRS/PRSice_linux/PRSice_linux --A1 A1 \
     --A2 A2 \
