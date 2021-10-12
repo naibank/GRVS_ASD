@@ -1,10 +1,9 @@
-setwd("~/Documents/doc/working/NFLD/2019/scriptsNC/")
 
 library(data.table)
 library(GenomicRanges)
 
 rm(list = ls())
-transcript <- read.delim("~/Documents/doc/working/ReferenceData/refflat/refFlat.hg19.txt",
+transcript <- read.delim("ReferenceData/refflat/refFlat.hg19.txt",
                          stringsAsFactors = F, header = F)
 names(transcript) <- c("gsymbol", "isoform", "chr", "strand", "start", "end", "cds.start", "cds.end", "exons",
                        "exon.starts", "exon.ends")
