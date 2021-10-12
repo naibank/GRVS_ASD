@@ -1,4 +1,3 @@
-setwd("~/Documents/doc/working/NFLD/2019/scripts/")
 rm(list=ls())
 library(ordinal)
 library(ggplot2)
@@ -181,7 +180,7 @@ getScore <- function(dt, baseline, test){
 
 load("../../data/GeneSet/gsNFLD.RData")
 
-cds <- read.delim("~/Documents/CentOS_Documents/CNVs/data/annotateCNV/FromJohn/hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
+cds <- read.delim("hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
 cds.g <- GRanges(cds$V1, IRanges(cds$V2, cds$V3), "*")
 
 all.cnv <- read.delim("../data/all.cnvs.may6.txt", stringsAsFactors = F)
