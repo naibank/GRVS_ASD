@@ -1,10 +1,9 @@
-setwd("~/Documents/doc/working/NFLD/2019/scriptsNC/")
 
 library(data.table)
 library(GenomicRanges)
 
 rm(list = ls())
-transcript <- read.delim("~/Documents/doc/working/ReferenceData/refflat/refFlat.hg19.txt",
+transcript <- read.delim("ReferenceData/refflat/refFlat.hg19.txt",
                          stringsAsFactors = F, header = F)
 names(transcript) <- c("gsymbol", "isoform", "chr", "strand", "start", "end", "cds.start", "cds.end", "exons",
                        "exon.starts", "exon.ends")
@@ -67,7 +66,7 @@ snv.rare$lnc_promoter_tier2[snv.rare$phastCons_placental < 0 |
                               snv.rare$phylopPMam_avg < 1.5] <- 0
 
 ### gnomad
-intolerance <- read.delim("~/Documents/doc/working/ReferenceData/constrain/gnomAD_oe_lof0.35_v2.1_Feb14_b38_coordinate.txt",
+intolerance <- read.delim("ReferenceData/constrain/gnomAD_oe_lof0.35_v2.1_Feb14_b38_coordinate.txt",
                           stringsAsFactors = F)
 snv.rare$tss_intolerance <- as.numeric(snv.rare$typeseq_priority == "upstream" & snv.rare$gene_symbol %in% intolerance$gene)
 snv.rare$tss_intolerance_tier2 <- snv.rare$tss_intolerance
