@@ -2,8 +2,8 @@
 # library(biomaRt) # biomaRt_2.30.0
 # library(snplist)
 library(data.table)
-ipsych <- fread("/hpf/largeprojects/tcagstor/projects/MSSNG_SSC_PRS/SSC_PRS/iPSYCH_Final_For_SSC_4685642_SNPs_P_01.txt", data.table = F)
-nfld <- read.delim("/hpf/largeprojects/tcagstor/projects/MSSNG_SSC_PRS/SSC_PRS/SSC_chr1_22_Filter_Pass_iPSYCH_SNPs_7261_Subjects.bim", stringsAsFactors = F, header = F)
+ipsych <- fread("iPSYCH_Final_For_SSC_4685642_SNPs_P_01.txt", data.table = F)
+nfld <- read.delim("SSC_chr1_22_Filter_Pass_iPSYCH_SNPs_7261_Subjects.bim", stringsAsFactors = F, header = F)
 names(ipsych) <- c("SNP", "A1", "A2", "CHR", "BP", "OR", "UNK", "P")
 ipsych$OR <- exp(ipsych$OR)
 #remove ambiguous SNPs i.e. A-T and C-G SNPs
