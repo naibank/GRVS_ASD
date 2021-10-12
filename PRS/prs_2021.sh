@@ -1,13 +1,3 @@
-#!/bin/bash -x
-
-#PBS -N PRS
-#PBS -l nodes=1:ppn=1
-#PBS -l vmem=32g
-#PBS -d /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS
-#PBS -l walltime=24:00:00
-#PBS -e /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS/prs.error
-#PBS -o /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS/prs.stdout
-
 ./PRSice_linux/PRSice_linux --A1 A1 \
     --A2 A2 \
     --bar-levels 0.001,0.05,0.1,0.2,0.3,0.4,0.5,1 \
