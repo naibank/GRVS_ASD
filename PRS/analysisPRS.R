@@ -1,4 +1,3 @@
-setwd("~/Documents/doc/working/NFLD/2019/common/")
 rm(list=ls())
 score <- read.delim("NFLD.PRS.Jan2020.tsv", stringsAsFactors = F)
 
