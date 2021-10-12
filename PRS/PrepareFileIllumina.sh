@@ -1,19 +1,3 @@
-#!/bin/bash
-
-#PBS -N creat_bed_ada_vcf
-#PBS -l nodes=1:ppn=10
-#PBS -l gres=localhd:30
-#PBS -l vmem=32g
-#PBS -l mem=32g
-#PBS -l walltime=148:00:00
-#PBS -e /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS/makeBed.error
-#PBS -o /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS/makeBed.stdout
-#PBS -d /hpf/largeprojects/tcagstor/users/worrawat/AdaPRS/bed
-
-module load samtools
-module load vcftools
-module load bcftools
-module load R
 
 ../plink_linux_x86_64/plink --const-fid --make-bed --out bgi --real-ref-alleles --recode vcf-iid --snps-only --vcf /hpf/largeprojects/tcagstor/users/btg1/dropbox/ada/wgs_ada/extract_merge_snps/BGI/merge.all.geno.id.norm.vcf.gz --vcf-half-call m
 
