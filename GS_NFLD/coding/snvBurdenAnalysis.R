@@ -1,6 +1,6 @@
 ### set working directory 301 subjects
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
+library(ordinal)
 ### install my burden analysis package
 #library(devtools)
 #install_github("naibank/GSBurden")
@@ -9,17 +9,17 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 rm(list=ls())
 
 ### read snv gene set
-dt <- read.delim("../data/SNVs/rare.gs.matrix.tsv", stringsAsFactors = F)
+dt <- read.delim("rare.gs.matrix.tsv", stringsAsFactors = F)
 
 ### read phenotype table
-info <- read.delim("../data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
+info <- read.delim("../../../../main/data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
 
 ### get only columns that I use
 info <- info[, c("WGS_ManuID", "DNA.source", "Relation", "Sex..CRV", "incl.aff.in.my.study", "incld.cohort", "Paternal.age",
                  "remove.family.for.rare.burden", "Platform", "Dysmorphology.classification", "Grouped_Dysmorphology", "Final.Dysmorphology.scores")]
 info <- info[info$incl.aff.in.my.study == 1 & info$remove.family.for.rare.burden != "remove", ]
 ### read estimated PCA
-pca <- read.delim("../estimated.pca.12March2019.tsv", stringsAsFactors = F)
+pca <- read.delim("../../../../NFLD2019/estimated.pca.12March2019.tsv", stringsAsFactors = F)
 pca <- pca[!pca$sample %in% c("3-0456-000", "3-0458-000"), ]
 pca$sample <- gsub("A", "", pca$sample)
 
@@ -40,7 +40,7 @@ merge <- merge(dt, info, by = "Sample", all.x = T)
 library(GSBurden)
 
 ### load geneset
-load("../requiredData/gsNFLD.RData")
+load("../../new_set/gsNFLD_2022.RData")
 
 snv.matrix <- merge
 ### encode label variables used to build different regression models
@@ -62,7 +62,7 @@ write.table(snv.matrix, "rare.coding.snv.tsv", sep="\t", row.names=F, quote=F, c
 
 names(snv.matrix) <- gsub("Total_", "gene_count_", names(snv.matrix))
 ### separate gene-sets into 3 collections for multiple testing correction purpose
-brainExp.gs <- grep("Expr|blueModule|Ilmn_BM|Bspan|FMR1|Synapse|Neurof", names(gsNFLD))
+brainExp.gs <- grep("Expr|blueModule|Ilmn_BM|Bspan|FMR1|Synapse|Neurof|LoF|etal", names(gsNFLD))
 phenotype.gs <- grep("Ph", names(gsNFLD))
 snv.matrix <- snv.matrix[!is.na(snv.matrix$pc1), ]
 ### define covariates
@@ -70,23 +70,90 @@ covariates <- c("Sex..CRV", "Platform", "pc1", "pc2", "pc3")
 
 ### run burden test for each of 3 gene-set collections
 perm.values <- data.frame()
+nperm <- 1000
 for(test in c("MultiClass", "GroupedDysmorphology")){
-  brainExp.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[brainExp.gs], test, covariates, nperm = 1000)
-  phenotype.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[phenotype.gs], test, covariates, nperm = 1000)
-  #neurofunctions.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[neurofunctions.gs], test, covariates, nperm = 1000)
-  coeff.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD, test, covariates, 
+  brainExp.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[brainExp.gs], test, covariates, nperm = nperm)
+  phenotype.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[phenotype.gs], test, covariates, nperm = nperm)
+  # neurofunctions.test.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD[neurofunctions.gs], test, covariates, nperm = 1000)
+  coeff.out <- CNVBurdenTest(snv.matrix[!is.na(snv.matrix[, test]),], gsNFLD, test, covariates,
                              permutation = F, correctGlobalBurden = F)$Test
   
+  ###mpc test
+  ref.term <- sprintf("%s ~ %s + gene_count_tier1_ms", test, paste(covariates, collapse = " + "))
+  add.term <- sprintf("%s + %s", ref.term, "MisMPC_morethan2")
+  coeff.term <- sprintf("%s ~ %s + MisMPC_morethan2", test, paste(covariates, collapse = " + "))
+  
+  if(test == "GroupedDysmorphology"){
+    ref.model <- glm(ref.term, snv.matrix, family = binomial(link = "logit"))
+    add.model <- glm(add.term, snv.matrix, family = binomial(link = "logit"))
+    coeff.model <- glm(coeff.term, snv.matrix, family = binomial(link = "logit"))
+    ano <- anova(ref.model, add.model, test = "Chisq")
+  }else{
+    ref.model <- ordinal::clm(ref.term, data = snv.matrix)
+    add.model <- ordinal::clm(add.term, data = snv.matrix)
+    coeff.model <- ordinal::clm(coeff.term, data = snv.matrix)
+    ano <- anova(ref.model, add.model)
+  }
+  
+  names(ano)[length(names(ano))] <- "pvalue"
+  pvalue <- ano$pvalue[2]
+  coefficient <- add.model$coefficients["MisMPC_morethan2"]
+  sm <- summary(add.model)
+  
+  if("MisMPC_morethan2" %in% rownames(sm$coefficients)){
+    waldp <- sm$coefficients["MisMPC_morethan2", 4]
+    stderr <- sm$coefficients["MisMPC_morethan2", 2]
+    testval <- sm$coefficients["MisMPC_morethan2", 3]
+  }else{
+    waldp <- stderr <- testval <- NA
+  }
+  
+  conf <- confint(add.model)
+  conf.coeff <- confint(coeff.model)
+  
+  perm.test.pvalues <- data.frame()
+  for(i in 1:nperm){
+    snv.matrix$permlab <- sample(snv.matrix[, test])
+    ref.term <- sprintf("permlab ~ %s + gene_count_tier1_ms", paste(covariates, collapse = " + "))
+    add.term <- sprintf("%s + %s", ref.term, "MisMPC_morethan2")
+    
+    if(test == "GroupedDysmorphology"){
+      ref.model <- glm(ref.term, snv.matrix, family = binomial(link = "logit"))
+      add.model <- glm(add.term, snv.matrix, family = binomial(link = "logit"))
+      ano.perm <- anova(ref.model, add.model, test = "Chisq")
+    }else{
+      ref.model <- ordinal::clm(ref.term, data = snv.matrix)
+      add.model <- ordinal::clm(add.term, data = snv.matrix)
+      ano.perm <- anova(ref.model, add.model)
+    }
+    
+    names(ano.perm)[length(names(ano.perm))] <- "pvalue"
+    perm.coeff <- add.model$coefficients["MisMPC_morethan2"]
+    perm.test.pvalues <- rbind(perm.test.pvalues, data.frame("cnvtype" = "tier1_ms", "pvalue" = ano.perm$pvalue[2], "coeff" = perm.coeff))
+  }
+  
+  coeff.out <- rbind(coeff.out, data.frame("geneset" = "MisMPC_morethan2", "type" = "tier1_ms", 
+                                           "coefficient" = coeff.model$coefficients["MisMPC_morethan2"], 
+                                           "coeff.upper" = conf.coeff["MisMPC_morethan2", 2],
+                                           "coeff.lower" = conf.coeff["MisMPC_morethan2", 1], 
+                                           "pvalue" = pvalue, stderr, testval, waldp, "permFDR" = NA))
+  ##########################
   burden.test.out <- rbind(brainExp.test.out$Test, phenotype.test.out$Test)
+  burden.test.out <- rbind(burden.test.out, data.frame("geneset" = "MisMPC_morethan2", "type" = "tier1_ms", 
+                                                       "coefficient" = coefficient, "coeff.upper" = conf["MisMPC_morethan2", 2],
+                                                       "coeff.lower" = conf["MisMPC_morethan2", 2], 
+                                                       "pvalue" = pvalue, stderr, testval, waldp, "permFDR" = NA))
+  
   burden.test.out <- merge(burden.test.out[, -c(3:5)], coeff.out[, 3:5], by = "row.names", all.x = T)
-  burden.test.out <- burden.test.out[, c(2:3, 6:8, 4:5)]
-  perm.temp <- rbind(brainExp.test.out$Permutation.Test, phenotype.test.out$Permutation.Test)
+  burden.test.out <- burden.test.out[, c(2:3, 9:11, 4:8)]
+  
+  perm.temp <- rbind(brainExp.test.out$Permutation.Test, phenotype.test.out$Permutation.Test, perm.test.pvalues)
   perm.temp$geneset <- gsub("[0-9]", "", rownames(perm.temp))
   perm.values <- rbind(perm.values, perm.temp)
-  write.table(burden.test.out, sprintf("../snvAnalysis/snv.rare.%s.gsburden.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(burden.test.out, sprintf("burdenResult/snv.rare.%s.gsburden.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
 }
 
-write.table(perm.values, "../snvAnalysis/perm.pvalues.rare.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(perm.values, "burdenResult/perm.pvalues.rare.tsv", sep="\t", row.names=F, quote=F, col.names=T)
 
 getPermPvalue <- function(target.pvalue, actual.pvalues, perm.pvalues){
   actual.times <- sum(actual.pvalues <= target.pvalue, na.rm = T)
@@ -101,14 +168,14 @@ getPermFDR <- function(i, dt){
   return(min(dt$permFDR[dt$pvalue >= pvalue]))
 }
 
-perm.pvalues <- read.delim("../snvAnalysis/perm.pvalues.rare.tsv", stringsAsFactors = F)
+perm.pvalues <- read.delim("burdenResult/perm.pvalues.rare.tsv", stringsAsFactors = F)
 for(test in c("GroupedDysmorphology",  "MultiClass")){
-  dt <- read.delim(sprintf("../snvAnalysis/snv.rare.%s.gsburden.tsv", test), stringsAsFactors = F)
-  brainExp.test <- dt[dt$geneset %in% names(gsNFLD)[brainExp.gs], ]
+  dt <- read.delim(sprintf("burdenResult/snv.rare.%s.gsburden.tsv", test), stringsAsFactors = F)
+  brainExp.test <- dt[dt$geneset %in% c("MisMPC_morethan2", names(gsNFLD)[brainExp.gs]), ]
   phenotype.test <- dt[dt$geneset %in% names(gsNFLD)[phenotype.gs], ]
  
   perm.pvalues$geneset <- gsub("_lof|_tier1_missense|_tier2_missense", "", perm.pvalues$geneset)
-  brain.perm <- perm.pvalues[perm.pvalues$geneset %in% names(gsNFLD)[brainExp.gs], ] 
+  brain.perm <- perm.pvalues[perm.pvalues$geneset %in% c("MisMPC_morethan2", names(gsNFLD)[brainExp.gs]), ] 
   phenotype.perm <- perm.pvalues[perm.pvalues$geneset %in% names(gsNFLD)[phenotype.gs], ] 
   
   brainExp.test$permFDR <- sapply(brainExp.test$pvalue, getPermPvalue, brainExp.test$pvalue, brain.perm$pvalue)
@@ -120,7 +187,7 @@ for(test in c("GroupedDysmorphology",  "MultiClass")){
   
   dt.out <- rbind(brainExp.test, phenotype.test)
   
-  write.table(dt.out, sprintf("../snvAnalysis/snv.rare.%s.gsburden.withPerm.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(dt.out, sprintf("burdenResult/snv.rare.%s.gsburden.withPerm.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
 }
 
 ### prepare data for plot
@@ -128,7 +195,7 @@ lof <- data.frame()
 ms1 <- data.frame()
 ms2 <- data.frame()
 for(test in c("GroupedDysmorphology", "MultiClass")){
-  burden.test.out <- read.delim(sprintf("../snvAnalysis/snv.rare.%s.gsburden.withPerm.tsv", test), stringsAsFactors = F)
+  burden.test.out <- read.delim(sprintf("burdenResult/snv.rare.%s.gsburden.withPerm.tsv", test), stringsAsFactors = F)
   burden.test.out$Test <- test
   burden.test.out$FDRRange <- "NotSignificant"
   burden.test.out$FDRRange[burden.test.out$permFDR < 0.20] <- "< 20%"
@@ -164,7 +231,7 @@ ggplot(lof, aes(x = geneset, y = coefficient, fill = FDRRange)) +
   theme(axis.text.x = element_text(angle = 90, hjust =1)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("LoF variants")
 
-ggsave("../snvAnalysis/gs.rare.lof.burden.pdf", width = 12, height = 5)
+ggsave("burdenResult/gs.rare.lof.burden.pdf", width = 12, height = 5)
 
 ### plot ms1 result
 ms1$Test <- ifelse(ms1$Test == "MultiClass", "Three subtypes", "Two subtypes")
@@ -185,7 +252,7 @@ ggplot(ms1, aes(x = geneset, y = coefficient, fill = FDRRange)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Tier 1 missenses")
 
 
-ggsave("../snvAnalysis/gs.rare.ms1.burden.pdf", width = 12, height = 5)
+ggsave("burdenResult/gs.rare.ms1.burden.pdf", width = 12, height = 5)
 
 
 ### plot ms2 result
@@ -207,11 +274,11 @@ ggplot(ms2, aes(x = geneset, y = coefficient, fill = FDRRange)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Tier 2 missenses")
 
 
-ggsave("../snvAnalysis/gs.rare.ms2.burden.pdf", width = 12, height = 5)
+ggsave("burdenResult/gs.rare.ms2.burden.pdf", width = 12, height = 5)
 
-write.table(lof, "../snvAnalysis/gs.lof.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
-write.table(ms1, "../snvAnalysis/gs.ms1.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
-write.table(ms2, "../snvAnalysis/gs.ms2.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(lof, "burdenResult/gs.lof.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(ms1, "burdenResult/gs.ms1.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(ms2, "burdenResult/gs.ms2.result.table.tsv", sep="\t", row.names=F, quote=F, col.names=T)
 ####################################
 ######## global burden test ########
 
@@ -256,5 +323,5 @@ ggplot(global.test, aes(x = type, y = coefficient, fill = PvalueRange)) +
   theme(axis.text.x = element_text(angle = 90, hjust =1)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Global Burden")
 
-write.table(global.test, "../snvAnalysis/global.rare.burden.tsv", sep="\t", row.names=F, quote=F, col.names=T)
-ggsave("../snvAnalysis/global.rare.burden.pdf", width = 6, height = 4)
+write.table(global.test, "burdenResult/global.rare.burden.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+ggsave("burdenResult/global.rare.burden.pdf", width = 6, height = 4)
