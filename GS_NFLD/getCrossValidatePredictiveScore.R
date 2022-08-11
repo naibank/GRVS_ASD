@@ -295,18 +295,18 @@ getScore <- function(dt, target, baseline, test, score.name, class = "GroupedDys
   return(target[, c("Sample", score.name)])
 }
 
-load("../requiredData/gsNFLD.RData")
+load("../burden_analysis/new_set/gsNFLD_2022.RData")
 
-cds <- read.delim("../requiredData/hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
+cds <- read.delim("../../main/requiredData/hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
 cds.g <- GRanges(cds$V1, IRanges(cds$V2, cds$V3), "*")
 
-all.nc.cnv <- read.delim("../dataNC/cnv.annotated.tsv", stringsAsFactors = F)
+all.nc.cnv <- read.delim("../../main/dataNC/cnv.annotated.tsv", stringsAsFactors = F)
 all.nc.cnv <- all.nc.cnv[!all.nc.cnv$ts_overlap, ]
 all.nc.cnv$sample <- gsub("-", "_", all.nc.cnv$sample)
 all.nc.cnv$sample <- gsub("A|_A", "", all.nc.cnv$sample)
 
-all.cnv <- rbind(read.delim("../data/all.cnvs.may6.txt", stringsAsFactors = F),
-                 read.delim("../data/all.small.cnvs.may6.txt", stringsAsFactors = F))
+all.cnv <- rbind(read.delim("../burden_analysis/coding/CNVs/all.cnvs.June2022.txt", stringsAsFactors = F),
+                 read.delim("../burden_analysis/coding/CNVs/all.small.cnvs.June2022.txt", stringsAsFactors = F))
 
 all.cnv.g <- GRanges(all.cnv$chr, IRanges(all.cnv$start, all.cnv$end), "*")
 
@@ -325,55 +325,55 @@ all.cnv[olap$queryHits, names(olap)[-1]] <- olap[, -1]
 all.cnv$sample <- gsub("-", "_", all.cnv$sample)
 all.cnv$sample <- gsub("A|_A", "", all.cnv$sample)
 
-rare.lof <- read.delim("../data/SNVs/calls/rare/lof.variants.DEC062019.tsv", stringsAsFactors = F)
-rare.ms1 <- read.delim("../data/SNVs/calls/rare/ms1.variants.DEC062019.tsv", stringsAsFactors = F)
-rare.ms2 <- read.delim("../data/SNVs/calls/rare/ms2.variants.DEC062019.tsv", stringsAsFactors = F)
+rare.lof <- read.delim("../../main/data/SNVs/calls/rare/lof.variants.Jun2022.tsv", stringsAsFactors = F)
+rare.ms1 <- read.delim("../../main/data/SNVs/calls/rare/ms1.variants.Jun2022.tsv", stringsAsFactors = F)
+rare.ms2 <- read.delim("../../main/data/SNVs/calls/rare/ms2.variants.Jun2022.tsv", stringsAsFactors = F)
 rare.lof$effect.tier <- "lof"
 rare.ms1$effect.tier <- "tier1_ms"
 rare.ms2$effect.tier <- "tier2_ms"
 all.rare <- rbind(rare.lof, rbind(rare.ms1, rare.ms2))
-nc.rare <- read.delim("../dataNC/snv.rare.annotated.tsv", stringsAsFactors = F)
-nc.denovo <- read.delim("../dataNC/snv.denovo.annotated.tsv", stringsAsFactors = F)
+nc.rare <- read.delim("../../main/dataNC/snv.rare.annotated.tsv", stringsAsFactors = F)
+nc.denovo <- read.delim("../../main/dataNC/snv.denovo.annotated.tsv", stringsAsFactors = F)
 
-eth <- read.delim("../NFLD_ethnicity_admixture_and_eigensoft/nfld.eth.tag.tsv", stringsAsFactors = F)
+eth <- read.delim("../../main/NFLD_ethnicity_admixture_and_eigensoft/nfld.eth.tag.tsv", stringsAsFactors = F)
 
-denovo.lof <- read.delim("../data/SNVs/calls/denovo/lof.variants.DEC062019.tsv", stringsAsFactors = F)
-denovo.ms1 <- read.delim("../data/SNVs/calls/denovo/ms1.variants.DEC062019.tsv", stringsAsFactors = F)
-denovo.ms2 <- read.delim("../data/SNVs/calls/denovo/ms2.variants.DEC062019.tsv", stringsAsFactors = F)
+denovo.lof <- read.delim("../../main/data/SNVs/calls/denovo/lof.variants.Jun2022.tsv", stringsAsFactors = F)
+denovo.ms1 <- read.delim("../../main/data/SNVs/calls/denovo/ms1.variants.Jun2022.tsv", stringsAsFactors = F)
+denovo.ms2 <- read.delim("../../main/data/SNVs/calls/denovo/ms2.variants.Jun2022.tsv", stringsAsFactors = F)
 denovo.lof$effect.tier <- "lof"
 denovo.ms1$effect.tier <- "tier1_ms"
 denovo.ms2$effect.tier <- "tier2_ms"
 all.denovo <- rbind(denovo.lof, rbind(denovo.ms1, denovo.ms2))
 
 ### read all 5 files
-cnv.coding <- read.delim("../cnv.coding.matrix.tsv", stringsAsFactors = F)
+cnv.coding <- read.delim("../burden_analysis/coding/CNVs/cnv.coding.matrix.tsv", stringsAsFactors = F)
 cnv.coding$sample <- gsub("-", "_", cnv.coding$sample)
 cnv.coding$sample <- gsub("A|_A", "", cnv.coding$sample)
 names(cnv.coding)[1] <- "Sample"
 
-scnv.coding <- read.delim("../cnv.smaller.coding.matrix.tsv", stringsAsFactors = F)
+scnv.coding <- read.delim("../burden_analysis/coding/CNVs/cnv.smaller.coding.matrix.tsv", stringsAsFactors = F)
 scnv.coding$sample <- gsub("-", "_", scnv.coding$sample)
 scnv.coding$sample <- gsub("A|_A", "", scnv.coding$sample)
 names(scnv.coding)[1] <- "Sample"
 
-cnv.ncoding <- read.delim("../dataNC/nc.cnv.matrix.tsv", stringsAsFactors = F)
-scnv.ncoding <- read.delim("../dataNC/nc.smaller.cnv.matrix.tsv", stringsAsFactors = F)
+cnv.ncoding <- read.delim("../../main/dataNC/nc.cnv.matrix.tsv", stringsAsFactors = F)
+scnv.ncoding <- read.delim("../../main/dataNC/nc.smaller.cnv.matrix.tsv", stringsAsFactors = F)
 
-snv.coding.rare <- read.delim("rare.coding.snv.tsv", stringsAsFactors = F)
+snv.coding.rare <- read.delim("../burden_analysis/coding/SNVs/rare.coding.snv.tsv", stringsAsFactors = F)
 snv.coding.rare <- snv.coding.rare[!is.na(snv.coding.rare$GroupedDysmorphology), ]
 #fix PCs for four samples in cnv.coding
-cnv.coding <- merge(cnv.coding[, -c(87:89)], snv.coding.rare[, c(1, 129:131)], by = "Sample", all.x = T)
-scnv.coding <- merge(scnv.coding[, -c(87:89)], snv.coding.rare[, c(1, 129:131)], by = "Sample", all.x = T)
-cnv.ncoding <- merge(cnv.ncoding, snv.coding.rare[, c(1, 120, 125, 129:135)], by = "Sample", all.x = T)
-scnv.ncoding <- merge(scnv.ncoding, snv.coding.rare[, c(1, 120, 125, 129:135)], by = "Sample", all.x = T)
+cnv.coding <- merge(cnv.coding[, -c(97:100)], snv.coding.rare[, c(1, 142:145)], by = "Sample", all.x = T)
+scnv.coding <- merge(scnv.coding[, -c(97:100)], snv.coding.rare[, c(1, 142:145)], by = "Sample", all.x = T)
+cnv.ncoding <- merge(cnv.ncoding, snv.coding.rare[, c(1, 130, 135, 139:145)], by = "Sample", all.x = T)
+scnv.ncoding <- merge(scnv.ncoding, snv.coding.rare[, c(1, 130, 135, 139:145)], by = "Sample", all.x = T)
 
-snv.coding.denovo <- read.delim("denovo.coding.snv.tsv", stringsAsFactors = F)
+snv.coding.denovo <- read.delim("../burden_analysis/coding/SNVs/denovo.coding.snv.tsv", stringsAsFactors = F)
 snv.coding.denovo <- snv.coding.denovo[!is.na(snv.coding.denovo$GroupedDysmorphology), ]
 
-snv.nc.rare <- read.delim("../scriptsNC/nc.snv.rare.matrix.tsv", stringsAsFactors = F)
+snv.nc.rare <- read.delim("../../main/scriptsNC/nc.snv.rare.matrix.tsv", stringsAsFactors = F)
 snv.nc.rare <- snv.nc.rare[!is.na(snv.coding.rare$GroupedDysmorphology), ]
 
-snv.nc.denovo <- read.delim("../scriptsNC/nc.snv.denovo.matrix.tsv", stringsAsFactors = F)
+snv.nc.denovo <- read.delim("../../main/scriptsNC/nc.snv.denovo.matrix.tsv", stringsAsFactors = F)
 snv.nc.denovo <- snv.nc.denovo[!is.na(snv.nc.denovo$GroupedDysmorphology), ]
 
 baseline.feat <- c("Sample", "Sex..CRV",  "Platform", "GroupedDysmorphology", "pc1", "pc2", "pc3")
@@ -411,8 +411,8 @@ for(i in 1:length(fold.ess)){
   baseline <- glm("GroupedDysmorphology ~ Sex..CRV + Platform + pc1 + pc2 + pc3", data = samples[samples$Sample %in% disc.set, ])
   
   ## get significant geneset
-  cnv1 <- getSigFeatures(cnv.coding[cnv.coding$Sample %in% disc.set, ], "gene_count_deletion", covariates, names(cnv.coding)[c(45:81)])
-  cnv2 <- getSigFeatures(cnv.coding[cnv.coding$Sample %in% disc.set, ], "gene_count_duplication", covariates, names(cnv.coding)[c(5:41)])
+  cnv1 <- getSigFeatures(cnv.coding[cnv.coding$Sample %in% disc.set, ], "gene_count_deletion", covariates, names(cnv.coding)[c(48:87)])
+  cnv2 <- getSigFeatures(cnv.coding[cnv.coding$Sample %in% disc.set, ], "gene_count_duplication", covariates, names(cnv.coding)[c(5:44)])
   cnv.c.sig <- c(cnv1$set, cnv2$set)
   cnv.set <- rbind(cnv1$coeff, cnv2$coeff)
   if(length(cnv1$set) > 0)
@@ -420,8 +420,8 @@ for(i in 1:length(fold.ess)){
   if(length(cnv2$set) > 0)
     coeff.all <- rbind(coeff.all, data.frame(cnv2$coeff, "variant" = "coding_rare_CNVs", stringsAsFactors = F))
   
-  scnv1 <- getSigFeatures(scnv.coding[scnv.coding$Sample %in% disc.set, ], "gene_count_deletion", covariates, names(scnv.coding)[5:41])
-  scnv2 <- getSigFeatures(scnv.coding[scnv.coding$Sample %in% disc.set, ], "gene_count_duplication", covariates, names(scnv.coding)[45:81])
+  scnv1 <- getSigFeatures(scnv.coding[scnv.coding$Sample %in% disc.set, ], "gene_count_deletion", covariates, names(scnv.coding)[5:44])
+  scnv2 <- getSigFeatures(scnv.coding[scnv.coding$Sample %in% disc.set, ], "gene_count_duplication", covariates, names(scnv.coding)[48:87])
   scnv.c.sig <- c(scnv1$set, scnv2$set)
   scnv.set <- rbind(scnv1$coeff, scnv2$coeff)
   if(length(scnv1$set) > 0)
@@ -449,9 +449,9 @@ for(i in 1:length(fold.ess)){
     coeff.all <- rbind(coeff.all, data.frame(scnv2.nc$coeff, "variant" = "small_noncoding_rare_CNVs", stringsAsFactors = F))
   
   ###snvs
-  snv1 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.rare)[4:40])
-  snv2 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.rare)[42:78])
-  snv3 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.rare)[80:116])
+  snv1 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.rare)[4:43])
+  snv2 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.rare)[c(45:84, 126)])
+  snv3 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.rare)[86:125])
   snv.c.rare.sig <- c(snv1$set, snv2$set, snv3$set)
   rare.set <- rbind(snv1$coeff, rbind(snv2$coeff, snv3$coeff))
   
@@ -462,9 +462,9 @@ for(i in 1:length(fold.ess)){
   if(length(snv3$set) > 0)
     coeff.all <- rbind(coeff.all, data.frame(snv3$coeff, "variant" = "coding_rare_SNVs", stringsAsFactors = F))
   
-  snv1 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.denovo)[4:40])
-  snv2 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.denovo)[42:78])
-  snv3 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.denovo)[80:116])
+  snv1 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.denovo)[4:43])
+  snv2 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.denovo)[c(45:84, 126)])
+  snv3 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.denovo)[86:125])
   snv.c.denovo.sig <- c(snv1$set, snv2$set, snv3$set)
   denovo.set <- rbind(snv1$coeff, rbind(snv2$coeff, snv3$coeff))
   if(length(snv1$set) > 0)
@@ -603,6 +603,8 @@ for(i in 1:length(fold.ess)){
                    paste("rare noncoding SNVs", snv.nc.rare.sig, sep=":"), 
                    paste("de novo noncoding SNVs", snv.nc.denovo.sig, sep=":"))
       if(sum(cnv.set$pvalue < p) > 0){
+        # function(dt, target, baseline, test, score.name, class = "GroupedDysmorphology"){
+          
         cnv.c.cli <- getScore(cnv.coding[cnv.coding$Sample %in% disc.set, ],
                             cli.cnv[cli.cnv$Sample %in% targ.set, ], baseline, cnv.c.sig[cnv.set$pvalue < p], "coding_rare_CNVs")
       }else{
