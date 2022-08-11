@@ -9,9 +9,9 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 rm(list=ls())
 
 ### read data from R object
-load("../data/2019.02.25-filteredCG_CNVs_cdsFixed_McgFixed.RData")
-load("../data/2019.02.25-filteredSingles_CNVs_cdsFixed_McgFixed.RData")
-load("../data/2019.02.25-filteredTrios_CNVs_cdsFixed_McgFixed.RData")
+load("../../../../main/data/2019.02.25-filteredCG_CNVs_cdsFixed_McgFixed.RData")
+load("../../../../main/data/2019.02.25-filteredSingles_CNVs_cdsFixed_McgFixed.RData")
+load("../../../../main/data/2019.02.25-filteredTrios_CNVs_cdsFixed_McgFixed.RData")
 
 ### get only column sample, chr, start, end, variant_type and size of CNVs
 ### match column and merge data from different tables
@@ -24,11 +24,11 @@ merge <- rbind(singles_filter, trios_filter)
 merge <- rbind(merge, CG_filter[, c(2:4, 1, 5:7)])
 merge <- merge[merge$chr %in% paste0("chr", c(1:22)), ]
 ### read phenotype table
-info <- read.delim("../data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
+info <- read.delim("../../../../main/data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
 
 ### get only columns that I use
 info <- info[, c("WGS_ManuID", "DNA.source", "Relation", "Sex..CRV", "incl.aff.in.my.study", "incld.cohort", "remove.family.for.rare.burden",
-                 "Platform", "Dysmorphology.classification", "Grouped_Dysmorphology", "Final.Dysmorphology.scores")]
+                 "Platform", "Dysmorphology.classification", "Grouped_Dysmorphology", "Final.Dysmorphology.scores", "ADM")]
 
 # unique(merge$sample[!merge$sample %in% info$WGS_ManuID])
 # [1] "3-0741-000A" "3-0179-000A" "3-0450-000A" "3-0213-000A" "3-0730-000A"
@@ -41,7 +41,7 @@ info$WGS_ManuID <- gsub("3-0213-000", "3-0213-000A", info$WGS_ManuID)
 info$WGS_ManuID <- gsub("3-0730-000", "3-0730-000A", info$WGS_ManuID)
 
 ### read estimated PCA
-pca <- read.delim("../estimated.pca.12March2019.tsv", stringsAsFactors = F)
+pca <- read.delim("../../../../NFLD2019/estimated.pca.12March2019.tsv", stringsAsFactors = F)
 pca <- pca[!pca$sample %in% c("3-0456-000", "3-0458-000"), ]
 pca$sample <- gsub("A", "", pca$sample)
 
@@ -57,17 +57,17 @@ merge <- merge[merge$sample %in% info$WGS_ManuID, ]
 library(GSBurden)
 
 ### load geneset
-load("../requiredData/gsNFLD.RData")
+load("../../new_set/gsNFLD_2022.RData")
 
 ### limit to CNVs smaller than 10KB
 merge <- merge[merge$CNV_size <= 10000, ]
 cnvs <- CNVSet(merge$sample, merge$chr, merge$start, merge$end, merge$variant_type)
 cnvs$size <- cnvs$end - cnvs$start + 1
 
-write.table(cnvs, "../data/all.small.cnvs.may6.txt", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(cnvs, "all.small.cnvs.June2022.txt", sep="\t", row.names=F, quote=F, col.names=T)
 
 ### read coding exons table
-gene.in <- na.omit(read.delim("../../../ReferenceData/geneInfo2019/hg19_refFlat_ext.txt", header = F, stringsAsFactors = F,
+gene.in <- na.omit(read.delim("../../../../../ReferenceData/geneInfo2019/hg19_refFlat_ext.txt", header = F, stringsAsFactors = F,
                               col.names = c("genesymbol", "isoid", "chr", "strand", "start", "end", "cds.start", "cds.end",
                                             "exons", "exon.starts", "exon.ends", "blank", "name2", "iso2", "var0", "var1", "var2", "entrezid", "blah")))
 gene.in <- gene.in[, c("chr", "start", "end", "isoid", "genesymbol", "entrezid")]
@@ -101,9 +101,9 @@ cnv.matrix$GroupedDysmorphology <- ifelse(cnv.matrix$Grouped_Dysmorphology == "N
 
 cnv.matrix$DysmorphologyScore <- factor(cnv.matrix$Final.Dysmorphology.scores, levels = sort(unique(as.numeric(cnv.matrix$Final.Dysmorphology.scores))))
 
-write.table(cnv.matrix, "../cnv.smaller.coding.matrix.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(cnv.matrix, "cnv.smaller.coding.matrix.tsv", sep="\t", row.names=F, quote=F, col.names=T)
 ### separate gene-sets into 3 collections for multiple testing correction purpose
-brainExp.gs <- grep("Expr|blueModule|Ilmn_BM|Bspan|FMR1|Synapse|Neurof", names(gsNFLD))
+brainExp.gs <- grep("Expr|blueModule|Ilmn_BM|Bspan|FMR1|Synapse|Neurof|LoF|etal", names(gsNFLD))
 phenotype.gs <- grep("Ph", names(gsNFLD))
 
 ### define covariates
@@ -112,7 +112,7 @@ covariates <- c("Sex..CRV", "Platform", "pc1", "pc2", "pc3")
 ### run burden test for each of 3 gene-set collections
 perm.values <- data.frame()
 
-for(test in c("GroupedDysmorphology", "MultiClass")){
+for(test in c("MultiClass", "GroupedDysmorphology")){
   brainExp.test.out <- CNVBurdenTest(cnv.matrix[!is.na(cnv.matrix[, test]),], gsNFLD[brainExp.gs], test, covariates, nperm = 1000)
   phenotype.test.out <- CNVBurdenTest(cnv.matrix[!is.na(cnv.matrix[, test]),], gsNFLD[phenotype.gs], test, covariates, nperm = 1000)
   coeff.out <- CNVBurdenTest(cnv.matrix[!is.na(cnv.matrix[, test]),], gsNFLD, test, covariates, 
@@ -125,10 +125,10 @@ for(test in c("GroupedDysmorphology", "MultiClass")){
   perm.temp$geneset <- gsub("[0-9]", "", rownames(perm.temp))
   perm.values <- rbind(perm.values, perm.temp)
   
-  write.table(burden.test.out, sprintf("../%s.smaller.gsburden.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(burden.test.out, sprintf("burdenResult/%s.smaller.gsburden.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
 }
-perm.values$geneset <- rep(perm.temp$geneset, 4)
-write.table(perm.values, "../perm.smaller.pvalues.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+perm.values$geneset <- rep(perm.temp$geneset, 2)
+write.table(perm.values, "burdenResult/perm.smaller.pvalues.tsv", sep="\t", row.names=F, quote=F, col.names=T)
 
 ### cal perm
 
@@ -145,9 +145,9 @@ getPermFDR <- function(i, dt){
   return(min(dt$permFDR[dt$pvalue >= pvalue], na.rm = T))
 }
 
-perm.pvalues <- read.delim("../perm.smaller.pvalues.tsv", stringsAsFactors = F)
-for(test in c("GroupedDysmorphology", "MultiClass")){
-  dt <- read.delim(sprintf("../%s.smaller.gsburden.tsv", test), stringsAsFactors = F)
+perm.pvalues <- read.delim("burdenResult/perm.smaller.pvalues.tsv", stringsAsFactors = F)
+for(test in c("MultiClass", "GroupedDysmorphology")){
+  dt <- read.delim(sprintf("burdenResult/%s.smaller.gsburden.tsv", test), stringsAsFactors = F)
   
   brainExp.test <- dt[dt$geneset %in% names(gsNFLD)[brainExp.gs], ]
   phenotype.test <- dt[dt$geneset %in% names(gsNFLD)[phenotype.gs], ]
@@ -167,15 +167,15 @@ for(test in c("GroupedDysmorphology", "MultiClass")){
   dt.out$coeff.lower[is.na(dt.out$coeff.lower) & !is.na(dt.out$coeff.upper)] <- -Inf
   dt.out$coeff.upper[!is.na(dt.out$coeff.lower) & is.na(dt.out$coeff.upper)] <- Inf
   
-  write.table(dt.out, sprintf("../%s.smaller.gsburden.withPerm.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(dt.out, sprintf("burdenResult/%s.smaller.gsburden.withPerm.tsv", test), sep="\t", row.names=F, quote=F, col.names=T)
 }
 
 
 ### prepare data for plot
 del <- data.frame()
 dup <- data.frame()
-for(test in c("GroupedDysmorphology", "MultiClass")){
-  burden.test.out <- read.delim(sprintf("../%s.smaller.gsburden.withPerm.tsv", test), stringsAsFactors = F)
+for(test in c("MultiClass", "GroupedDysmorphology")){
+  burden.test.out <- read.delim(sprintf("burdenResult/%s.smaller.gsburden.withPerm.tsv", test), stringsAsFactors = F)
   test <- ifelse(test == "GroupedDysmorphology", "Two subtypes", "Three subtypes")
   
   burden.test.out$Test <- test
@@ -209,7 +209,7 @@ ggplot(del, aes(x = geneset, y = coefficient, fill = FDRRange)) +
   theme(axis.text.x = element_text(angle = 90, hjust =1)) + #coord_cartesian(ylim = c(-0.5, 1.5)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Deletions")
 
-ggsave("../gs.smaller.deletion.burden.pdf", width = 12, height = 5)
+ggsave("burdenResult/gs.smaller.deletion.burden.pdf", width = 12, height = 5)
 dup$Test <- factor(dup$Test, levels = c("Two subtypes", "Three subtypes"))
 
 ### plot duplication result
@@ -228,7 +228,7 @@ ggplot(dup, aes(x = geneset, y = coefficient, fill = FDRRange)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Duplications")
 
 
-ggsave("../gs.smaller.duplication.burden.pdf", width = 12, height = 5)
+ggsave("burdenResult/gs.smaller.duplication.burden.pdf", width = 12, height = 5)
 
 
 #### subset plot ####
@@ -316,7 +316,7 @@ ggsave("../gs.smaller.duplication.burden.pdf", width = 12, height = 5)
 ######## global burden test ########
 
 global.test <- data.frame()
-for(test in c("GroupedDysmorphology", "ComplexVsEssential", "MultiClass", "DysmorphologyScore")){
+for(test in c("MultiClass", "GroupedDysmorphology")){
   tmp.test <- CNVGlobalTest(cnv.matrix, test, covariates)
   tmp.test$Test <- test
   global.test <- rbind(global.test, tmp.test)
@@ -327,9 +327,9 @@ global.test$PvalueRange[global.test$pvalue < 0.1] <- "< 0.1"
 global.test$PvalueRange[global.test$pvalue < 0.05]  <- "< 0.05"
 global.test$PvalueRange[global.test$pvalue < 0.01]  <- "< 0.01"
 global.test$PvalueRange <- factor(global.test$PvalueRange, levels = c("NotSignificant", "< 0.1", "< 0.05", "< 0.01"))
-write.table(global.test, "../global.smaller.burden.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+write.table(global.test, "burdenResult/global.smaller.burden.tsv", sep="\t", row.names=F, quote=F, col.names=T)
 
-global.test <- read.delim("../global.smaller.burden.tsv", stringsAsFactors = F)
+global.test <- read.delim("burdenResult/global.smaller.burden.tsv", stringsAsFactors = F)
 global.test <- global.test[global.test$Test %in% c("GroupedDysmorphology", "MultiClass"), ]
 global.test$Test <- ifelse(global.test$Test == "GroupedDysmorphology", "Two subtypes", "Three subtypes")
 global.test$Test <- factor(global.test$Test, levels = c("Two subtypes", "Three subtypes"))
@@ -347,5 +347,5 @@ ggplot(global.test[global.test$global == "gene_count", ], aes(x = type, y = coef
   theme(axis.text.x = element_text(angle = 90, hjust =1)) +
   guides(fill = guide_legend(override.aes=list(shape=21))) + ggtitle("Global Burden")
 
-ggsave("../global.smaller.burden.pdf", width = 6, height = 4)
+ggsave("burdenResult/global.smaller.burden.pdf", width = 6, height = 4)
 
