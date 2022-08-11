@@ -5,28 +5,28 @@ p <- 0.1
 
 check <- c("SSC06086", "SSC09081", "SSC09084", "SSC09086", "SSC09478")
 check.fam <- c("12175", "13069", "13227", "14484")
-n442 <- read.delim("../SNVs/n442.SSCaff_unaffsib_samplelist.tsv", stringsAsFactors = F)
+n442 <- read.delim("../../../replication/SNVs/n442.SSCaff_unaffsib_samplelist.tsv", stringsAsFactors = F)
 
 # for(p in c(1, 0.5, 0.1, 0.05, 0.01)){
 # for(var in c("duplication", "deletion", "lof", "tier1_ms", "tier2_ms")){
-cnvs <- read.delim("../CNVs/SSC.gs.matrix.tsv", stringsAsFactors = F)
-nccnvs <- read.delim("../dataNC/cnv.matrix.tsv", stringsAsFactors = F)
+cnvs <- read.delim("SSC.gs.matrix.tsv", stringsAsFactors = F)
+nccnvs <- read.delim("../../../replication/dataNC/cnv.matrix.tsv", stringsAsFactors = F)
 
-scnvs <- read.delim("../CNVs/smaller.SSC.gs.matrix.tsv", stringsAsFactors = F)
-sncnvs <- read.delim("../dataNC/small.cnv.matrix.tsv", stringsAsFactors = F)
+scnvs <- read.delim("smaller.SSC.gs.matrix.tsv", stringsAsFactors = F)
+sncnvs <- read.delim("../../../replication/dataNC/small.cnv.matrix.tsv", stringsAsFactors = F)
 
 nccnvs <- nccnvs[nccnvs$sample %in% c(cnvs$sample, scnvs$sample), ]
 sncnvs <- sncnvs[sncnvs$sample %in% c(cnvs$sample, scnvs$sample), ]
 
-rSNV <- read.delim("../SNVs/SSC_rare.gs.matrix.tsv", stringsAsFactors = F)
+rSNV <- read.delim("SSC_rare.gs.matrix.tsv", stringsAsFactors = F)
 rSNV.outliers <- rSNV$sample[rSNV$TotalRare > 3*IQR(rSNV$TotalRare) + quantile(rSNV$TotalRare, 0.75)]
-eth <- read.delim("../SSC_data/Target.admixture.tagged.tsv", stringsAsFactors = F)
+eth <- read.delim("../../../replication/SSC_data/Target.admixture.tagged.tsv", stringsAsFactors = F)
 rSNV.outliers <- rSNV.outliers[rSNV.outliers %in% eth$IND[eth$ETH_TAG == "EUR"]]
 
-dSNV <- read.delim("../SNVs/SSC_denovo.gs.matrix.tsv", stringsAsFactors = F)
+dSNV <- read.delim("SSC_denovo.gs.matrix.tsv", stringsAsFactors = F)
 
-nrsnv <- read.delim("../dataNC/rare.snv.matrix.tsv", stringsAsFactors = F)
-ndsnv <- read.delim("../dataNC/denovo.snv.matrix.tsv", stringsAsFactors = F)
+nrsnv <- read.delim("../../../replication/dataNC/rare.snv.matrix.tsv", stringsAsFactors = F)
+ndsnv <- read.delim("../../../replication/dataNC/denovo.snv.matrix.tsv", stringsAsFactors = F)
 
 cnv.outliers <- readLines("CNVOutlier.txt")
 
@@ -42,7 +42,7 @@ ndsnv <- ndsnv[!ndsnv$sample %in% outliers, ]
 nccnvs <- nccnvs[!nccnvs$sample %in% outliers, ]
 sncnvs <- sncnvs[!sncnvs$sample %in% outliers, ]
 
-coeff <- read.delim("../../main/scripts/ADM/coeff.ADM.from.all.samples.tsv", stringsAsFactors = F)
+coeff <- read.delim("../ADM/coeff.ADM.from.all.samples.tsv", stringsAsFactors = F)
 # coeff <- coeff[coeff$variant %in% c("coding_denovo_SNVs", "coding_rare_CNVs", "small_coding_rare_CNVs", "coding_rare_SNVs"), ]
 coeff <- coeff[coeff$pvalue < p, ]
 # coeff <- coeff[-grep("tier1_ms", coeff$set), ]
@@ -135,7 +135,7 @@ dt.out <- dt.out[, c("sample", "CNVs_score", "smallCNVs_score", "dSNVs_score", "
                      "noncodeCNVs_score", "smallnoncodeCNVs_score", "noncodedSNVs_score", "noncoderSNVs_score")]
 dt.out$totalScore <- rowSums(dt.out[, -1])
 
-meta <- read.delim("../SSC_data/SSC_meta_data.tsv", stringsAsFactors = F)
+meta <- read.delim("../../../replication/SSC_data/SSC_meta_data.tsv", stringsAsFactors = F)
 dt.out <- merge(dt.out, meta[, -1], by.x = "sample", by.y = "Sample.ID", all.x = T)
 dt.out$adm.dysmorphic <- as.character(dt.out$adm.dysmorphic)
 dt.out$adm.dysmorphic[is.na(dt.out$adm.dysmorphic)] <- "unaff"
@@ -196,7 +196,16 @@ if(length(dt.out$noncoderSNVs_score) > 0)
   dt.out$noncoderSNVs_score <- perc.rank(dt.out$noncoderSNVs_score)
 if(length(dt.out$noncodedSNVs_score) > 0)
   dt.out$noncodedSNVs_score <- perc.rank(dt.out$noncodedSNVs_score)
+
+dt.out$std_grvs <- scale(dt.out$totalScore)
+
+allsamples <- n442
+allsamples <- merge(allsamples, dt.out, by.x="Sample.ID", by.y = "sample", all.x = T)
+allsamples$perc_grvs <- perc.rank(allsamples$totalScore)
+write.table(allsamples, "../../suptable/ssc_grvs_for_sup16.tsv", sep="\t", row.names=F, quote=F, col.names = T)
+
 dt.out$totalScore <- perc.rank(dt.out$totalScore)
+
 
 p0 <- ggplot()
 p1 <- ggplot()
@@ -320,6 +329,17 @@ ggplot(dt.out, aes(x = adm.dysmorphic, y = totalScore, fill = adm.dysmorphic)) +
 ggsave("ssc.grs.pdf", width = 5, height = 4)
   #scale_y_continuous(breaks = c(0, 0.25, 0.5, 0.75, 1), labels = c("0th", "25th", "50th", "75th", "100th")) + 
   
+
+###compare unaffected sibs
+dysfam <- n442$Family_ID[which(n442$adm.dysmorphic == "dys")]
+nondysfam <- n442$Family_ID[which(n442$adm.dysmorphic == "nondys")]
+unaff.dys <- dt.out[which(dt.out$adm.dysmorphic == "Unaffected sibling" &
+                      dt.out$sample %in% n442$Sample.ID[n442$Family_ID %in% dysfam]), ]
+unaff.nondys <- dt.out[which(dt.out$adm.dysmorphic == "Unaffected sibling" &
+                      dt.out$sample %in% n442$Sample.ID[n442$Family_ID %in% nondysfam]), ]
+
+wilcox.test(unaff.dys$totalScore, 
+            unaff.nondys$totalScore, alternative = "greater")$p.value
 # 
 # sample CNVs_score dSNVs_score rSNVs_score totalScore adm.dysmorphic adm.autism_type
 # 148 SSC06764   50.04089           0    8.439151   58.48004         nondys         complex

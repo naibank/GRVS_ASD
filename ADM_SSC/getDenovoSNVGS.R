@@ -1,13 +1,18 @@
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 rm(list=ls())
 library(data.table)
-load("../../main/requiredData/gsNFLD.RData")
+load("../../burden_analysis/new_set/gsNFLD_2022.RData")
 
 # dt <- data.frame(readxl::read_excel("../denovo SNVs from 2018 An et al/aat6576_Table-S2.xlsx"), stringsAsFactors = F)
 # denovo.hg38 <- fread("../SNVs/SSC_denovo/f_all_20200702.formatted.ann.final.ssc-dn.aid.txt", data.table = F)
-dt <- read.delim("../SNVs/SSC_denovo/hg19.bed", stringsAsFactors = F, header = F)
-ssc_rare <- read.delim("../SNVs/SSC_rare.gs.matrix.tsv", stringsAsFactors = F)
+dt <- read.delim("../../../replication/SNVs/SSC_denovo/hg19.bed", stringsAsFactors = F, header = F)
+ssc_rare <- read.delim("SSC_rare.gs.matrix.tsv", stringsAsFactors = F)
 names(dt) <- c("chr", "start", "end", "sample", "varid")
+
+
+mpc <- read.delim("../../mpc/NFLD_replication_snv.rare.missenses.tsv.annovar.out_rev27.6_hg19.tsv", stringsAsFactors = F)
+mpc <- mpc[which(mpc$MPC_score > 2), ]
+mpc <- unique(paste(mpc$chr, mpc$start, mpc$ref_allele, mpc$alt_allele, sep="#"))
 
 # id.map <- read.delim("../../../MSSNGExpansion/data/SampleInfo/nygc_sfari_id_sample_map.data", sep=",", stringsAsFactors = F)
 # id.map <- id.map[id.map$Sample.ID %in% ssc_rare$sample, ]
@@ -23,9 +28,9 @@ names(dt) <- c("chr", "start", "end", "sample", "varid")
 # dt <- merge(dt, id.map, by.x = "SampleID", by.y = "SFARI.ID", all = F)
 dt$varid <- paste(dt$chr, dt$start+1, dt$sample, sep="#")
 # allvar <- fread("../SNVs/all.variants.tsv", data.table = F)
-lof <- read.delim("../SNVs/SSC_rare_1pct_lof.variants.tsv", stringsAsFactors = F)
-ms1 <- read.delim("../SNVs/SSC_rare_1pct_ms1.variants.tsv", stringsAsFactors = F)
-ms2 <- read.delim("../SNVs/SSC_rare_1pct_ms2.variants.tsv", stringsAsFactors = F)
+lof <- read.delim("SSC_rare_1pct_lof.variants.tsv", stringsAsFactors = F)
+ms1 <- read.delim("SSC_rare_1pct_ms1.variants.tsv", stringsAsFactors = F)
+ms2 <- read.delim("SSC_rare_1pct_ms2.variants.tsv", stringsAsFactors = F)
 
 lof$ID <- paste(lof$chr, lof$start, lof$sample, sep = "#")
 ms1$ID <- paste(ms1$chr, ms1$start, ms1$sample, sep = "#")
@@ -49,7 +54,7 @@ getSummary <- function(dt, gs){
   return(merge(totalVar, otherVar, by = "sample", all = T))
 }
 
-load("../../main/requiredData/gsNFLD.RData")
+load("../../burden_analysis/new_set/gsNFLD_2022.RData")
 
 lof.feat <- getSummary(lof[lof$denovo, ], gsNFLD)
 mis.t1.feat <- getSummary(ms1[ms1$denovo, ], gsNFLD)
@@ -59,13 +64,18 @@ names(lof.feat)[-1] <- paste0(names(lof.feat)[-1], "_lof")
 names(mis.t1.feat)[-1] <- paste0(names(mis.t1.feat)[-1], "_tier1_ms")
 names(mis.t2.feat)[-1] <- paste0(names(mis.t2.feat)[-1], "_tier2_ms")
 
+mis.mpc2 <- ms1[which(ms1$denovo & ms1$varid %in% mpc), ]
+mis.mpc2 <- data.frame(table(mis.mpc2$sample))
+names(mis.mpc2) <- c("sample", "MisMPC_morethan2")
+
 dt.out <- merge(ssc_rare[, 1:2], lof.feat, by = "sample", all = T)
 dt.out <- merge(dt.out, mis.t1.feat, by = "sample", all = T)
 dt.out <- merge(dt.out, mis.t2.feat, by = "sample", all = T)
+dt.out <- merge(dt.out, mis.mpc2, by = "sample", all = T)
 dt.out[is.na(dt.out)] <- 0
 
-write.table(dt.out, "../SNVs/SSC_denovo.gs.matrix.tsv", sep="\t", row.names=F, quote=F, col.names=T)
-nfld <- read.delim("../../main/data/SNVs/denovo.gs.matrix.tsv", stringsAsFactors = F)
-
-summary(dt.out$Total_lof)
-summary(nfld$Total_lof)
+write.table(dt.out, "SSC_denovo.gs.matrix.tsv", sep="\t", row.names=F, quote=F, col.names=T)
+# nfld <- read.delim("../../main/data/SNVs/denovo.gs.matrix.tsv", stringsAsFactors = F)
+# 
+# summary(dt.out$Total_lof)
+# summary(nfld$Total_lof)

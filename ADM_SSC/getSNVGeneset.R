@@ -2,7 +2,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 rm(list=ls())
 library(data.table)
 type <- c("rare")
-load("../../main/requiredData/gsNFLD.RData")
+load("../../burden_analysis/new_set/gsNFLD_2022.RData")
 
 iselement <- function(gs, enzid){
   return(enzid %in% gs)
@@ -15,12 +15,16 @@ getSummary <- function(dt, gs){
   return(merge(totalVar, otherVar, by = "sample", all = T))
 }
 
+mpc <- read.delim("../../mpc/NFLD_replication_snv.rare.missenses.tsv.annovar.out_rev27.6_hg19.tsv", stringsAsFactors = F)
+mpc <- mpc[which(mpc$MPC_score > 2), ]
+mpc <- unique(paste(mpc$chr, mpc$start, mpc$ref_allele, mpc$alt_allele, sep="#"))
 ### get gene-set matrix ###
 
 for(th.type in type){
   # d <- data.frame(fread(sprintf("calls/%s/all.%s.variants.OCT2019.tsv", th.type, th.type)), stringsAsFactors = F)
-  d <- fread("../SNVs/SSC_rare1pct_SNVs_INDELs_QCed.tsv", data.table = F)
+  d <- fread("../../../replication/SNVs/SSC_rare1pct_SNVs_INDELs_QCed.tsv", data.table = F)
   d <- d[d$chr %in% paste0("chr", 1:22), ]
+  d$varid <- paste(d$chr, d$start, d$REF, d$ALT, sep="#")
   
   #lof rare = 5077 + 26 = 5103
   #mis2 rare = 20382 + 80= 20462
@@ -51,6 +55,10 @@ for(th.type in type){
   mis.t1[, names(gsNFLD)] <- sapply(gsNFLD, iselement, mis.t1$entrez_id)
   mis.t2[, names(gsNFLD)] <- sapply(gsNFLD, iselement, mis.t2$entrez_id)
 
+  mis.mpc2 <- d[which(d$effect_priority == "nonsynonymous SNV" & d$varid %in% mpc), ]
+  mis.mpc2 <- data.frame(table(mis.mpc2$sample))
+  names(mis.mpc2) <- c("sample", "MisMPC_morethan2")
+  
   # > nrow(lof)/length(unique(d$sample))
   # [1] 41.53992
   # > nrow(mis.t1)/length(unique(d$sample))
@@ -60,9 +68,9 @@ for(th.type in type){
   table(lof$effect_priority)/length(unique(d$sample))
   table(lof$typeseq_priority)/length(unique(d$sample))
   
-  write.table(lof, sprintf("../SNVs/SSC_%s_1pct_lof.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
-  write.table(mis.t1, sprintf("../SNVs/SSC_%s_1pct_ms1.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
-  write.table(mis.t2, sprintf("../SNVs/SSC_%s_1pct_ms2.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(lof, sprintf("SSC_%s_1pct_lof.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(mis.t1, sprintf("SSC_%s_1pct_ms1.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(mis.t2, sprintf("SSC_%s_1pct_ms2.variants.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
   
   lof.feat <- getSummary(lof, gsNFLD)
   mis.t1.feat <- getSummary(mis.t1, gsNFLD)
@@ -75,7 +83,9 @@ for(th.type in type){
   dt.out <- merge(total.rare.variants, lof.feat, by = "sample", all = T)
   dt.out <- merge(dt.out, mis.t1.feat, by = "sample", all = T)
   dt.out <- merge(dt.out, mis.t2.feat, by = "sample", all = T)
+  dt.out <- merge(dt.out, mis.mpc2, by = "sample", all = T)
+  
   dt.out[is.na(dt.out)] <- 0
   
-  write.table(dt.out, sprintf("../SNVs/SSC_%s.gs.matrix.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
+  write.table(dt.out, sprintf("SSC_%s.gs.matrix.tsv", th.type), sep="\t", row.names=F, quote=F, col.names=T)
 }
