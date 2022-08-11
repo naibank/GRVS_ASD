@@ -264,13 +264,13 @@ getScore <- function(dt, target, baseline, test, score.name, class = "ADM"){
   return(target[, c("Sample", score.name)])
 }
 
-load("../requiredData/gsNFLD.RData")
+load("../burden_analysis/new_set/gsNFLD_2022.RData")
 
-cds <- read.delim("../../../ReferenceData/RefGene_fromJohn/hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
+cds <- read.delim("../../main/requiredData/hg19_refGene_28_04_17.cds.txt", stringsAsFactors = F, header = F)
 cds.g <- GRanges(cds$V1, IRanges(cds$V2, cds$V3), "*")
 
-all.cnv <- rbind(read.delim("../data/all.cnvs.may6.txt", stringsAsFactors = F),
-                 read.delim("../data/all.small.cnvs.may6.txt", stringsAsFactors = F))
+all.cnv <- rbind(read.delim("../burden_analysis/coding/CNVs/all.cnvs.June2022.txt", stringsAsFactors = F),
+                 read.delim("../burden_analysis/coding/CNVs/all.small.cnvs.June2022.txt", stringsAsFactors = F))
 all.cnv.g <- GRanges(all.cnv$chr, IRanges(all.cnv$start, all.cnv$end), "*")
 
 olap <- data.frame(findOverlaps(all.cnv.g, cds.g))
@@ -286,40 +286,40 @@ olap <- aggregate(.~queryHits, olap, sum)
 all.cnv[, names(olap)[-1]] <- 0
 all.cnv[olap$queryHits, names(olap)[-1]] <- olap[, -1]
 
-rare.lof <- read.delim("../data/SNVs/calls/rare/lof.variants.DEC062019.tsv", stringsAsFactors = F)
-rare.ms1 <- read.delim("../data/SNVs/calls/rare/ms1.variants.DEC062019.tsv", stringsAsFactors = F)
-rare.ms2 <- read.delim("../data/SNVs/calls/rare/ms2.variants.DEC062019.tsv", stringsAsFactors = F)
+rare.lof <- read.delim("../../main/data/SNVs/calls/rare/lof.variants.Jun2022.tsv", stringsAsFactors = F)
+rare.ms1 <- read.delim("../../main/data/SNVs/calls/rare/ms1.variants.Jun2022.tsv", stringsAsFactors = F)
+rare.ms2 <- read.delim("../../main/data/SNVs/calls/rare/ms2.variants.Jun2022.tsv", stringsAsFactors = F)
 rare.lof$effect.tier <- "lof"
 rare.ms1$effect.tier <- "tier1_ms"
 rare.ms2$effect.tier <- "tier2_ms"
 all.rare <- rbind(rare.lof, rbind(rare.ms1, rare.ms2))
 
-denovo.lof <- read.delim("../data/SNVs/calls/denovo/lof.variants.DEC062019.tsv", stringsAsFactors = F)
-denovo.ms1 <- read.delim("../data/SNVs/calls/denovo/ms1.variants.DEC062019.tsv", stringsAsFactors = F)
-denovo.ms2 <- read.delim("../data/SNVs/calls/denovo/ms2.variants.DEC062019.tsv", stringsAsFactors = F)
+denovo.lof <- read.delim("../../main/data/SNVs/calls/denovo/lof.variants.Jun2022.tsv", stringsAsFactors = F)
+denovo.ms1 <- read.delim("../../main/data/SNVs/calls/denovo/ms1.variants.Jun2022.tsv", stringsAsFactors = F)
+denovo.ms2 <- read.delim("../../main/data/SNVs/calls/denovo/ms2.variants.Jun2022.tsv", stringsAsFactors = F)
 denovo.lof$effect.tier <- "lof"
 denovo.ms1$effect.tier <- "tier1_ms"
 denovo.ms2$effect.tier <- "tier2_ms"
 all.denovo <- rbind(denovo.lof, rbind(denovo.ms1, denovo.ms2))
 
 ### read all 5 files
-cnv.coding <- read.delim("ADM/cnv.coding.matrix.tsv", stringsAsFactors = F)
+cnv.coding <- read.delim("../burden_analysis/coding/CNVs/ADM.cnv.coding.matrix.tsv", stringsAsFactors = F)
 cnv.coding$sample <- gsub("-", "_", cnv.coding$sample)
 cnv.coding$sample <- gsub("A|_A", "", cnv.coding$sample)
 names(cnv.coding)[1] <- "Sample"
 
-scnv.coding <- read.delim("ADM/smaller.cnv.coding.matrix.tsv", stringsAsFactors = F)
+scnv.coding <- read.delim("../burden_analysis/coding/CNVs/ADM.smaller.cnv.coding.matrix.tsv", stringsAsFactors = F)
 scnv.coding$sample <- gsub("-", "_", scnv.coding$sample)
 scnv.coding$sample <- gsub("A|_A", "", scnv.coding$sample)
 names(scnv.coding)[1] <- "Sample"
 
 ### noncoding cnv
-cnv.ncoding <- read.delim("../dataNC/nc.cnv.matrix.tsv", stringsAsFactors = F)
-scnv.ncoding <- read.delim("../dataNC/nc.smaller.cnv.matrix.tsv", stringsAsFactors = F)
+cnv.ncoding <- read.delim("../../main/dataNC/nc.cnv.matrix.tsv", stringsAsFactors = F)
+scnv.ncoding <- read.delim("../../main/dataNC/nc.smaller.cnv.matrix.tsv", stringsAsFactors = F)
 
-snv.coding.rare <- read.delim("rare.coding.snv.tsv", stringsAsFactors = F)
+snv.coding.rare <- read.delim("../burden_analysis/coding/SNVs/rare.coding.snv.tsv", stringsAsFactors = F)
 
-meta <- read.delim("../data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
+meta <- read.delim("../../main/data/2021.02.01-updated NFLD phenotype table IQ ADM and 3 status.txt", stringsAsFactors = F)
 meta$WGS_ManuID <- gsub("-", "_", meta$WGS_ManuID)
 meta$WGS_ManuID <- gsub("A|_A", "", meta$WGS_ManuID)
 meta <- meta[meta$incl.aff.in.my.study == 1, ]
@@ -336,19 +336,19 @@ scnv.ncoding <- merge(scnv.ncoding, meta[, c("WGS_ManuID", "ADM")], by.x = "Samp
 
 snv.coding.rare <- merge(snv.coding.rare, meta[, c("WGS_ManuID", "ADM")], by.x = "Sample", by.y = "WGS_ManuID", all = F)
 
-cnv.coding <- merge(cnv.coding[, -c(84:88)], snv.coding.rare[, c(1, 129:136)])
-scnv.coding <- merge(scnv.coding[, -c(84:88)], snv.coding.rare[, c(1, 129:136)])
+cnv.coding <- merge(cnv.coding[, -c(90:94)], snv.coding.rare[, c(1, 139:146)])
+scnv.coding <- merge(scnv.coding[, -c(90:94)], snv.coding.rare[, c(1, 139:146)])
 
-cnv.ncoding <- merge(cnv.ncoding[, -c(22)], snv.coding.rare[, c(1, 120, 125, 129:136)], all = F)
-scnv.ncoding <- merge(scnv.ncoding[, -c(22)], snv.coding.rare[, c(1, 120, 125, 129:136)], all = F)
+cnv.ncoding <- merge(cnv.ncoding[, -c(22)], snv.coding.rare[, c(1, 130, 135, 139:146)], all = F)
+scnv.ncoding <- merge(scnv.ncoding[, -c(22)], snv.coding.rare[, c(1, 130, 135, 139:146)], all = F)
 
-snv.coding.denovo <- read.delim("denovo.coding.snv.tsv", stringsAsFactors = F)
+snv.coding.denovo <- read.delim("../burden_analysis/coding/SNVs/denovo.coding.snv.tsv", stringsAsFactors = F)
 snv.coding.denovo <- merge(snv.coding.denovo, meta[, c("WGS_ManuID", "ADM")], by.x = "Sample", by.y = "WGS_ManuID", all = F)
 
-snv.nc.rare <- read.delim("../scriptsNC/nc.snv.rare.matrix.tsv", stringsAsFactors = F)
+snv.nc.rare <- read.delim("../../main/scriptsNC/nc.snv.rare.matrix.tsv", stringsAsFactors = F)
 snv.nc.rare <- merge(snv.nc.rare, meta[, c("WGS_ManuID", "ADM")], by.x = "Sample", by.y = "WGS_ManuID", all = F)
 
-snv.nc.denovo <- read.delim("../scriptsNC/nc.snv.denovo.matrix.tsv", stringsAsFactors = F)
+snv.nc.denovo <- read.delim("../../main/scriptsNC/nc.snv.denovo.matrix.tsv", stringsAsFactors = F)
 snv.nc.denovo <- merge(snv.nc.denovo, meta[, c("WGS_ManuID", "ADM")], by.x = "Sample", by.y = "WGS_ManuID", all = F)
 
 
@@ -446,9 +446,9 @@ for(i in 1:length(fold.dys)){
   
   ##########
   
-  snv1 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.rare)[4:40])
-  snv2 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.rare)[42:78])
-  snv3 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.rare)[80:116])
+  snv1 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.rare)[4:43])
+  snv2 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.rare)[c(45:84, 126)])
+  snv3 <- getSigFeatures(snv.coding.rare[snv.coding.rare$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.rare)[86:125])
   snv.c.rare.sig <- c(snv1$set, snv2$set, snv3$set)
   rare.set <- rbind(snv1$coeff, rbind(snv2$coeff, snv3$coeff))
   
@@ -459,9 +459,9 @@ for(i in 1:length(fold.dys)){
   if(length(snv3$set) > 0)
     coeff.all <- rbind(coeff.all, data.frame(snv3$coeff, "variant" = "coding_rare_SNVs", stringsAsFactors = F))
   
-  snv1 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.denovo)[4:40])
-  snv2 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.denovo)[42:78])
-  snv3 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.denovo)[80:116])
+  snv1 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_lof", covariates, names(snv.coding.denovo)[4:43])
+  snv2 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier1_ms", covariates, names(snv.coding.denovo)[c(45:84, 126)])
+  snv3 <- getSigFeatures(snv.coding.denovo[snv.coding.denovo$Sample %in% disc.set, ], "Total_tier2_ms", covariates, names(snv.coding.denovo)[86:125])
   snv.c.denovo.sig <- c(snv1$set, snv2$set, snv3$set)
   denovo.set <- rbind(snv1$coeff, rbind(snv2$coeff, snv3$coeff))
   if(length(snv1$set) > 0)
@@ -845,7 +845,7 @@ write.table(out.perf, "performance.all.cutoffs.tsv", sep="\t", row.names=F)
 out.perf <- read.delim("performance.all.cutoffs.tsv", stringsAsFactors = F)
 out.perf$cutoff <- factor(out.perf$cutoff, levels = rev(out.perf$cutoff))
 ggplot(out.perf, aes(x = paste0("p<",cutoff), y = NagelkerkeR2, label = p)) + 
-  geom_bar(stat = "identity", color = "black", fill = "red") + xlab("p cut-off") + ylim(0, 0.2) +
+  geom_bar(stat = "identity", color = "black", fill = "red") + xlab("p cut-off") + ylim(0, 0.23) +
   theme_bw() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + geom_text(angle = 90, nudge_y = 0.025)
 ggsave("adm.performance.pdf", width = 4, height = 5)
 # tmp.pvalue <- paste(paste0("coding CNVs\t", gsub("\n", "\t", p1.pvalue)),
